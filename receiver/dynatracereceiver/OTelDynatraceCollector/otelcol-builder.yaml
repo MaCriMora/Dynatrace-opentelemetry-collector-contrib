@@ -1,0 +1,20 @@
+dist:
+  name: otelcol-dynatrace
+  description: "Custom OTel Collector with Dynatrace Receiver"
+  output_path: ./otelcol-dynatrace
+
+
+receivers:
+  - gomod: "github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.1"
+    path: "C:/Development/Project_SID/OTel-testms/opentelemetry-collector-contrib/receiver/dynatracereceiver"
+    # import and name can be added if needed, but are usually inferred
+
+exporters:
+  - gomod: "go.opentelemetry.io/collector-contrib/exporter/loggingexporter v0.122.0"
+    import: "go.opentelemetry.io/collector-contrib/exporter/loggingexporter"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [dynatrace]
+      exporters: [logging]
