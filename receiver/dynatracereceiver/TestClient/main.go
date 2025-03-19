@@ -10,22 +10,21 @@ import (
 
 func main() {
 	config := &dynatracereceiver.Config{
-		APIEndpoint: "", // put in your endpoint
-		APIToken:    "", // put in your token
+		APIEndpoint: "", // tofo -> find correct api enpoint and edit query to fetch correct data
+		APIToken:    "",
 	}
+	// add dynatrace endpoint & APItoken
 
 	receiver := &dynatracereceiver.Receiver{Config: config}
 
-	// Start the receiver
 	err := receiver.Start(context.Background(), nil)
 	if err != nil {
 		log.Fatal("Error starting receiver:", err)
 	}
 
-	// Let it run for a short period (e.g., 2 minutes) to see periodic pulls
+	// currently just set to 2min for less logs but can be increased or just left out. Was just for testing
 	time.Sleep(2 * time.Minute)
 
-	// Shutdown receiver
 	err = receiver.Shutdown(context.Background())
 	if err != nil {
 		log.Fatal("Error shutting down receiver:", err)
