@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/joho/godotenv v1.5.1
-	github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
+	github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
 )
 
 require (
@@ -26,4 +26,4 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 )
 
-replace github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver => ../
+replace github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver => ../

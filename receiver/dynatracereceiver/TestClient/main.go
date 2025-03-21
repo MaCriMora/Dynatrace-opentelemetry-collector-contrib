@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver"
 	"github.com/joho/godotenv"
-	"github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver"
 )
 
 func main() {
