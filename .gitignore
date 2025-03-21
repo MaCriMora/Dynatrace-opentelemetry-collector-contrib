@@ -44,3 +44,6 @@ internal/tools/testresults/*
 go.work*
 
 /result
+
+#dynatrace api&endpoint
+.env

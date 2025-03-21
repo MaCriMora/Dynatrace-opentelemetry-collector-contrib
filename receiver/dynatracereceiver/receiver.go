@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -17,23 +18,21 @@ type Receiver struct {
 	stopChan chan struct{}
 }
 
-type DynatraceMetric struct {
-	MetricID    string `json:"metricId"`
-	DisplayName string `json:"displayName"`
-	Description string `json:"description"`
-	Unit        string `json:"unit"`
-}
-
-// todo: add pagination variable for more data -> current cap at 100
 type DynatraceResponse struct {
-	TotalCount int               `json:"totalCount"`
-	Metrics    []DynatraceMetric `json:"metrics"`
+	TotalCount  int                   `json:"totalCount"`
+	NextPageKey string                `json:"nextPageKey"`
+	Resolution  string                `json:"resolution"`
+	Result      []DynatraceMetricData `json:"result"`
 }
 
-type OTMetric struct {
-	Name        string
-	Description string
-	Unit        string
+type DynatraceMetricData struct {
+	MetricID string         `json:"metricId"`
+	Data     []MetricValues `json:"data"`
+}
+
+type MetricValues struct {
+	Timestamps []int64   `json:"timestamps"`
+	Values     []float64 `json:"values"`
 }
 
 // start polling from Dynatrace.
@@ -70,67 +69,96 @@ func (r *Receiver) Shutdown(ctx context.Context) error {
 }
 
 func pullDynatraceMetrics(apiEndpoint string, apiToken string) error {
-	client := &http.Client{}
 
-	// Make a request to Dynatrace API
-	req, err := http.NewRequest("GET", apiEndpoint, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Api-Token "+apiToken)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Read and parse the responseS
-	body, err := io.ReadAll(resp.Body)
+	metrics, err := fetchAllDynatraceMetrics(apiEndpoint, apiToken)
 	if err != nil {
 		return err
 	}
 
-	var dtResponse DynatraceResponse
-	if err := json.Unmarshal(body, &dtResponse); err != nil {
-		return fmt.Errorf("json unmarshal failed: %w", err)
-	}
-
-	// Set to false to print raw Dynatrace metrics or true for formatted OTel metrics depending what you want/need
-	// not really neccessary later but good to understand the metrics from dynatrace
-	formatOTelMetrics := true
-
-	if formatOTelMetrics {
-		PrintOTelMetrics(dtResponse)
-	} else {
-		PrintRawDynatraceMetrics(dtResponse)
-	}
+	printOTelMetrics(metrics)
 
 	return nil
 }
 
-func PrintRawDynatraceMetrics(response DynatraceResponse) {
-	fmt.Printf("\nRaw %d Dynatrace Metrics:\n", response.TotalCount)
-	for _, metric := range response.Metrics {
-		fmt.Printf("MetricID: %s | DisplayName: %s | Description: %s | Unit: %s\n",
-			metric.MetricID, metric.DisplayName, metric.Description, metric.Unit)
+func fetchAllDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceMetricData, error) {
+
+	url := createMetricsQuery(apiEndpoint)
+
+	resp, err := makeHttpRequest(url, apiToken)
+	if err != nil {
+		return nil, fmt.Errorf("request creation failed: %w", err)
 	}
+
+	body, err := readResponseBody(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var dtResponse DynatraceResponse
+	if err := json.Unmarshal(body, &dtResponse); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed: %w", err)
+	}
+
+	fmt.Println("Fetching data from:", url)
+	fmt.Println("Raw Response:", string(body))
+
+	return dtResponse.Result, nil
 }
 
-func PrintOTelMetrics(response DynatraceResponse) {
-	var otelMetrics []OTMetric
-
-	for _, metric := range response.Metrics {
-		otMetric := OTMetric{
-			Name:        metric.MetricID,
-			Description: metric.Description,
-			Unit:        metric.Unit,
-		}
-		otelMetrics = append(otelMetrics, otMetric)
+func createMetricsQuery(apiEndpoint string) (url string) {
+	metrics := []string{
+		"dsfm:active_gate.jvm.cpu_usage",
+		"builtin:billing.log.ingest.usage",
 	}
 
-	fmt.Printf("\nConverted %d OpenTelemetry Metrics:\n", len(otelMetrics))
-	for _, otMetric := range otelMetrics {
-		fmt.Printf("Name: %s | Description: %s | Unit: %s\n", otMetric.Name, otMetric.Description, otMetric.Unit)
+	metricSelector := strings.Join(metrics, ",")
+	url = fmt.Sprintf("%s?metricSelector=%s&resolution=1h&from=now-24h&to=now", apiEndpoint, metricSelector)
+
+	fmt.Println("Fetching data from:", url)
+
+	return
+
+}
+
+func readResponseBody(resp *http.Response) ([]byte, error) {
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response body failed: %w", err)
+	}
+	return body, nil
+}
+
+func makeHttpRequest(url, apiToken string) (*http.Response, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Api-Token "+apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func printOTelMetrics(metrics []DynatraceMetricData) {
+	fmt.Printf("\nConverted OpenTelemetry Metrics (%d metrics found):\n", len(metrics))
+
+	for _, metric := range metrics {
+		fmt.Printf("\nMetric Name: %s\n", metric.MetricID)
+		fmt.Println("---------------------------------")
+
+		for _, data := range metric.Data {
+			for i, ts := range data.Timestamps {
+				if i < len(data.Values) {
+					fmt.Printf("Timestamp: %d | Value: %.2f\n", ts, data.Values[i])
+				}
+			}
+		}
 	}
 }

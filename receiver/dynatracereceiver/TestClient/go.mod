@@ -4,7 +4,10 @@ go 1.23.0
 
 toolchain go1.24.1
 
-require github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
+require (
+	github.com/joho/godotenv v1.5.1
+	github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
+)
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect

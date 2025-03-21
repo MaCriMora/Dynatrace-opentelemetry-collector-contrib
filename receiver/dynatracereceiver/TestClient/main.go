@@ -3,26 +3,38 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/macrimo/opentelemetry-collector-contrib/receiver/dynatracereceiver"
 )
 
 func main() {
-	config := &dynatracereceiver.Config{
-		APIEndpoint: "", // tofo -> find correct api enpoint and edit query to fetch correct data
-		APIToken:    "",
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
-	// add dynatrace endpoint & APItoken
+
+	apiEndpoint := os.Getenv("API_ENDPOINT")
+	apiToken := os.Getenv("API_TOKEN")
+
+	if apiEndpoint == "" || apiToken == "" {
+		log.Fatal("API credentials missing. Check your .env file.")
+	}
+
+	config := &dynatracereceiver.Config{
+		APIEndpoint: apiEndpoint,
+		APIToken:    apiToken,
+	}
 
 	receiver := &dynatracereceiver.Receiver{Config: config}
 
-	err := receiver.Start(context.Background(), nil)
+	err = receiver.Start(context.Background(), nil)
 	if err != nil {
 		log.Fatal("Error starting receiver:", err)
 	}
 
-	// currently just set to 2min for less logs but can be increased or just left out. Was just for testing
 	time.Sleep(2 * time.Minute)
 
 	err = receiver.Shutdown(context.Background())
