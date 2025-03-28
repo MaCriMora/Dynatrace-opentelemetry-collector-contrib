@@ -10,15 +10,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type Receiver struct {
-	Config     *Config
-	nextMetric consumer.Metrics
-	ticker     *time.Ticker
-	stopChan   chan struct{}
+	Config   *Config
+	ticker   *time.Ticker
+	stopChan chan struct{}
 }
 
 type DynatraceResponse struct {
@@ -49,16 +46,10 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		for {
 			select {
 			case <-r.ticker.C:
-				metrics, err := pullDynatraceMetrics(r.Config.APIEndpoint, r.Config.APIToken)
+				err := pullDynatraceMetrics(r.Config.APIEndpoint, r.Config.APIToken)
 				if err != nil {
 					fmt.Println("Error pulling metrics:", err)
 				}
-
-				md := convertToMetricData(metrics)
-				if err := r.nextMetric.ConsumeMetrics(ctx, md); err != nil {
-					fmt.Println("Error consuming metrics:", err)
-				}
-
 			case <-r.stopChan:
 				fmt.Println("Stopping Dynatrace Receiver polling loop.")
 				return
@@ -77,16 +68,16 @@ func (r *Receiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func pullDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceMetricData, error) {
+func pullDynatraceMetrics(apiEndpoint string, apiToken string) error {
 
 	metrics, err := fetchAllDynatraceMetrics(apiEndpoint, apiToken)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	printOTelMetrics(metrics)
 
-	return metrics, nil
+	return nil
 }
 
 func fetchAllDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceMetricData, error) {
@@ -114,21 +105,10 @@ func fetchAllDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceM
 	return dtResponse.Result, nil
 }
 
-// Muessen noch nach doku angepasst werden
 func createMetricsQuery(apiEndpoint string) (url string) {
 	metrics := []string{
 		"dsfm:active_gate.jvm.cpu_usage",
 		"builtin:billing.log.ingest.usage",
-		"builtin:containers.cpu.usageTime",
-		"builtin:host.mem.used",
-		"builtin:host.disk.writeTime",
-		"builtin:host.disk.readTime",
-		"builtin:cloud.vmware.hypervisor.disk.usage",
-		"builtin:cloud.openstack.vm.disk.allocation",
-		"builtin:host.net.nic.trafficOut",
-		"builtin:host.net.nic.trafficIn",
-		"builtin:tech.nettracer.bytes_tx",
-		"builtin:kubernetes.node.conditions",
 	}
 
 	metricSelector := strings.Join(metrics, ",")
@@ -164,12 +144,6 @@ func makeHttpRequest(url, apiToken string) (*http.Response, error) {
 	}
 
 	return resp, nil
-}
-
-// TODO
-func convertToMetricData(metrics []DynatraceMetricData) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	return md
 }
 
 func printOTelMetrics(metrics []DynatraceMetricData) {

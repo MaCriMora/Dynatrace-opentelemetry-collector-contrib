@@ -7,7 +7,7 @@ import (
 type Config struct {
 	component.Config `mapstructure:",squash"`
 
-	APIEndpoint string `mapstructure:"API_ENDPOINT"`
+	APIEndpoint string `mapstructure:"api_endpoint"`
 
-	APIToken string `mapstructure:"API_TOKEN"`
+	APIToken string `mapstructure:"api_token"`
 }
