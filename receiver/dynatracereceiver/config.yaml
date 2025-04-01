@@ -1,0 +1,27 @@
+receivers:
+  dynatrace:
+    api_endpoint: ${env:API_ENDPOINT}
+    api_token: ${env:API_TOKEN}
+    metric_selectors:
+      - builtin:containers.cpu.usageTime
+      - builtin:containers.memory.residentSetBytes
+      - builtin:host.disk.writeTime
+      - builtin:host.disk.readTime
+      - builtin:host.disk.used
+      - builtin:host.disk.avail
+      - builtin:host.net.nic.trafficOut
+      - builtin:host.net.nic.trafficIn 
+      - builtin:kubernetes.node.conditions
+
+exporters:
+  debug:
+
+processors:
+  batch:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [dynatrace]
+      processors: [batch]
+      exporters: [debug]

@@ -49,7 +49,11 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		for {
 			select {
 			case <-r.ticker.C:
+<<<<<<< HEAD
 				metrics, err := pullDynatraceMetrics(r.Config.APIEndpoint, r.Config.APIToken)
+=======
+				metrics, err := pullDynatraceMetrics(r.Config)
+>>>>>>> 8056612ddd (config canges + script)
 				if err != nil {
 					fmt.Println("Error pulling metrics:", err)
 				}
@@ -77,23 +81,27 @@ func (r *Receiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+<<<<<<< HEAD
 func pullDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceMetricData, error) {
+=======
+func pullDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
+>>>>>>> 8056612ddd (config canges + script)
 
-	metrics, err := fetchAllDynatraceMetrics(apiEndpoint, apiToken)
+	metrics, err := fetchAllDynatraceMetrics(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	printOTelMetrics(metrics)
+	//printOTelMetrics(metrics)
 
 	return metrics, nil
 }
 
-func fetchAllDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceMetricData, error) {
+func fetchAllDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
 
-	url := createMetricsQuery(apiEndpoint)
+	url := createMetricsQuery(cfg)
 
-	resp, err := makeHttpRequest(url, apiToken)
+	resp, err := makeHttpRequest(url, cfg.APIToken)
 	if err != nil {
 		return nil, fmt.Errorf("request creation failed: %w", err)
 	}
@@ -114,6 +122,7 @@ func fetchAllDynatraceMetrics(apiEndpoint string, apiToken string) ([]DynatraceM
 	return dtResponse.Result, nil
 }
 
+<<<<<<< HEAD
 // Muessen noch nach doku angepasst werden
 func createMetricsQuery(apiEndpoint string) (url string) {
 	metrics := []string{
@@ -130,9 +139,13 @@ func createMetricsQuery(apiEndpoint string) (url string) {
 		"builtin:tech.nettracer.bytes_tx",
 		"builtin:kubernetes.node.conditions",
 	}
+=======
+// Muessen noch nach doku angepasst werden +
+func createMetricsQuery(cfg *Config) (url string) {
+>>>>>>> 8056612ddd (config canges + script)
 
-	metricSelector := strings.Join(metrics, ",")
-	url = fmt.Sprintf("%s?metricSelector=%s&resolution=1h&from=now-24h&to=now", apiEndpoint, metricSelector)
+	metricSelector := strings.Join(cfg.MetricSelectors, ",")
+	url = fmt.Sprintf("%s?metricSelector=%s&resolution=1h&from=now-24h&to=now", cfg.APIEndpoint, metricSelector)
 
 	fmt.Println("Fetching data from:", url)
 

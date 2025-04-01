@@ -133,7 +133,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.121.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.121.1
+ # - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.121.1
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.121.1-0.20250313100724-0885401136ff
@@ -224,7 +224,6 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.121.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.121.0
@@ -236,7 +235,10 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.121.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dynatracereceiver v0.122.1
+  - gomod: github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
+    import: github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver
+    name: dynatracereceiver
+    path: ./receiver/dynatracereceiver
 
 
 connectors:

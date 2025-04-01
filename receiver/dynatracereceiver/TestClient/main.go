@@ -16,8 +16,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	apiEndpoint := os.Getenv("API_ENDPOINT")
-	apiToken := os.Getenv("API_TOKEN")
+	apiEndpoint := os.Getenv("api_endpoint")
+	apiToken := os.Getenv("api_token")
 
 	if apiEndpoint == "" || apiToken == "" {
 		log.Fatal("API credentials missing. Check your .env file.")
