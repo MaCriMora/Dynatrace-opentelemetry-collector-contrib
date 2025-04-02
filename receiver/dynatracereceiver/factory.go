@@ -32,6 +32,6 @@ func createMetricsReceiver(
 
 	return &Receiver{
 		Config:     config,
-		nextMetric: nextConsumer,
+		NextMetric: nextConsumer,
 	}, nil
 }

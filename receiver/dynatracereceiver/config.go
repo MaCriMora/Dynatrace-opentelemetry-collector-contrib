@@ -9,7 +9,7 @@ type Config struct {
 
 	APIEndpoint string `mapstructure:"API_ENDPOINT"`
 
-	APIToken string `mapstructure:"api_token"`
+	APIToken string `mapstructure:"API_TOKEN"`
 
 	MetricSelectors []string `mapstructure:"metric_selectors"`
 }

@@ -11,12 +11,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type Receiver struct {
 	Config     *Config
-	nextMetric consumer.Metrics
+	NextMetric consumer.Metrics
 	ticker     *time.Ticker
 	stopChan   chan struct{}
 }
@@ -34,8 +35,10 @@ type DynatraceMetricData struct {
 }
 
 type MetricValues struct {
-	Timestamps []int64   `json:"timestamps"`
-	Values     []float64 `json:"values"`
+	Timestamps   []int64           `json:"timestamps"`
+	Values       []float64         `json:"values"`
+	Dimensions   []string          `json:"dimensions"`
+	DimensionMap map[string]string `json:"dimensionMap"`
 }
 
 // start polling from Dynatrace.
@@ -55,7 +58,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 				}
 
 				md := convertToMetricData(metrics)
-				if err := r.nextMetric.ConsumeMetrics(ctx, md); err != nil {
+				if err := r.NextMetric.ConsumeMetrics(ctx, md); err != nil {
 					fmt.Println("Error consuming metrics:", err)
 				}
 
@@ -114,7 +117,7 @@ func fetchAllDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
 	return dtResponse.Result, nil
 }
 
-// Muessen noch nach doku angepasst werden +
+// Muessen noch nach doku angepasst werden -> siehe config
 func createMetricsQuery(cfg *Config) (url string) {
 
 	metricSelector := strings.Join(cfg.MetricSelectors, ",")
@@ -155,9 +158,35 @@ func makeHttpRequest(url, apiToken string) (*http.Response, error) {
 // TODO
 func convertToMetricData(metrics []DynatraceMetricData) pmetric.Metrics {
 	md := pmetric.NewMetrics()
+
+	for _, metric := range metrics {
+		for _, data := range metric.Data {
+			rm := md.ResourceMetrics().AppendEmpty()
+			sm := rm.ScopeMetrics().AppendEmpty()
+			m := sm.Metrics().AppendEmpty()
+
+			m.SetName(metric.MetricID)
+			gauge := m.SetEmptyGauge()
+
+			for i, timestamp := range data.Timestamps {
+				if i < len(data.Values) && data.Values[i] != 0 {
+					dp := gauge.DataPoints().AppendEmpty()
+					dp.SetTimestamp(pcommon.Timestamp(timestamp * 1e6))
+					dp.SetDoubleValue(data.Values[i])
+
+					// container // umgebungen evt. later filtern
+					for key, val := range data.DimensionMap {
+						dp.Attributes().PutStr(key, val)
+					}
+				}
+			}
+		}
+	}
+
 	return md
 }
 
+// nur für schöneren print in der konsole zum testen
 func printOTelMetrics(metrics []DynatraceMetricData) {
 	fmt.Printf("\nConverted OpenTelemetry Metrics (%d metrics found):\n", len(metrics))
 
