@@ -8,6 +8,8 @@ require (
 	github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/viper v1.20.1
+	go.opentelemetry.io/collector/consumer v1.28.1
+	go.opentelemetry.io/collector/pdata v1.28.1
 )
 
 require (
@@ -25,8 +27,6 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.opentelemetry.io/collector/component v1.28.1 // indirect
-	go.opentelemetry.io/collector/consumer v1.28.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.28.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.122.1 // indirect
 	go.opentelemetry.io/collector/receiver v1.28.1 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect

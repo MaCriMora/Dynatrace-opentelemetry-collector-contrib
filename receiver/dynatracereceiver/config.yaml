@@ -16,6 +16,12 @@ receivers:
 exporters:
   debug:
 
+#  exporters:
+#  otlp:
+#    endpoint: <TARGET_IP>:4317
+#    tls:
+#      insecure: true
+
 processors:
   batch:
 

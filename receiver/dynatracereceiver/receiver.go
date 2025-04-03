@@ -1,6 +1,7 @@
 package dynatracereceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -112,7 +113,16 @@ func fetchAllDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
 	}
 
 	fmt.Println("Fetching data from:", url)
-	fmt.Println("Raw Response:", string(body))
+	var prettyJSON bytes.Buffer
+
+	err2 := json.Indent(&prettyJSON, body, "", "  ")
+	if err2 != nil {
+		fmt.Println("Raw Response (invalid JSON):", string(body))
+	} else {
+		fmt.Println("Raw Response (formatted JSON):", prettyJSON.String())
+	}
+
+	fmt.Println("Raw Response (invalid JSON):", string(body))
 
 	return dtResponse.Result, nil
 }

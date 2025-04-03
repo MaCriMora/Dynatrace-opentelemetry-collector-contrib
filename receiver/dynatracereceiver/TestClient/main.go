@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -53,9 +54,11 @@ func main() {
 		MetricSelectors: metricSelectors,
 	}
 
+	exporter := dynatraceexporter.NewSimpleExporter()
+
 	receiver := &dynatracereceiver.Receiver{
 		Config:     config,
-		NextMetric: &DummyConsumer{},
+		NextMetric: exporter,
 	}
 
 	err = receiver.Start(context.Background(), nil)
