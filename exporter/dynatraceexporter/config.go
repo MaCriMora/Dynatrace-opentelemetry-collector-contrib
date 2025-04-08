@@ -5,9 +5,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// Config defines configuration for logging exporter.
 type Config struct {
 	exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	TargetEndpoint               string `mapstructure:"target_endpoint"`
+	Endpoint                     string `mapstructure:"endpoint"`
 	component.Config             `mapstructure:",squash"`
 }

@@ -12,15 +12,15 @@ receivers:
       - builtin:host.net.nic.trafficOut
       - builtin:host.net.nic.trafficIn 
       - builtin:kubernetes.node.conditions
+    resolution: 1h
+    from: "2025-04-01T00:00:00Z"
+    to: "2025-04-03T00:00:00Z"
 
 exporters:
   debug:
+  dynatraceexporter:
+    target_endpoint: http://localhost:1234/v1/metrics
 
-#  exporters:
-#  otlp:
-#    endpoint: <TARGET_IP>:4317
-#    tls:
-#      insecure: true
 
 processors:
   batch:
@@ -30,4 +30,4 @@ service:
     metrics:
       receivers: [dynatrace]
       processors: [batch]
-      exporters: [debug]
+      exporters: [debug, dynatraceexporter]

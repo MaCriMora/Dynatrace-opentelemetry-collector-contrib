@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/MaCriMora/Dynatrace-opentelemetry-collector-contrib/receiver/dynatracereceiver"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -44,21 +43,36 @@ func main() {
 	}
 
 	metricSelectors := viper.GetStringSlice("receivers.dynatrace.metric_selectors")
+	resolution := viper.GetString("receivers.dynatrace.resolution")
+	from := viper.GetString("receivers.dynatrace.from")
+	to := viper.GetString("receivers.dynatrace.to")
+
 	if len(metricSelectors) == 0 {
 		log.Fatal("No metric selectors found in config.yaml")
+	}
+	if resolution == "" {
+		resolution = "1h"
+	}
+	if from == "" {
+		from = "2025-04-01T00:00:00Z"
+	}
+
+	if to == "" {
+		to = "2025-04-03T00:00:00Z"
 	}
 
 	config := &dynatracereceiver.Config{
 		APIEndpoint:     apiEndpoint,
 		APIToken:        apiToken,
 		MetricSelectors: metricSelectors,
+		Resolution:      resolution,
+		From:            from,
+		To:              to,
 	}
-
-	exporter := dynatraceexporter.NewSimpleExporter()
 
 	receiver := &dynatracereceiver.Receiver{
 		Config:     config,
-		NextMetric: exporter,
+		NextMetric: &DummyConsumer{}, //dynatraceexporter.NewSimpleExporter(),
 	}
 
 	err = receiver.Start(context.Background(), nil)

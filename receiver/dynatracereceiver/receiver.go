@@ -117,26 +117,22 @@ func fetchAllDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
 
 	err2 := json.Indent(&prettyJSON, body, "", "  ")
 	if err2 != nil {
-		fmt.Println("Raw Response (invalid JSON):", string(body))
+		//fmt.Println("Raw Response (invalid JSON):", string(body))
 	} else {
-		fmt.Println("Raw Response (formatted JSON):", prettyJSON.String())
+		//fmt.Println("Raw Response (formatted JSON):", prettyJSON.String())
 	}
 
-	fmt.Println("Raw Response (invalid JSON):", string(body))
+	//fmt.Println("Raw Response (invalid JSON):", string(body))
 
 	return dtResponse.Result, nil
 }
 
-// Muessen noch nach doku angepasst werden -> siehe config
-func createMetricsQuery(cfg *Config) (url string) {
-
+func createMetricsQuery(cfg *Config) string {
 	metricSelector := strings.Join(cfg.MetricSelectors, ",")
-	url = fmt.Sprintf("%s?metricSelector=%s&resolution=1h&from=now-24h&to=now", cfg.APIEndpoint, metricSelector)
+	url := fmt.Sprintf("%s?metricSelector=%s&resolution=%s&from=%s&to=%s", cfg.APIEndpoint, metricSelector, cfg.Resolution, cfg.From, cfg.To)
 
 	fmt.Println("Fetching data from:", url)
-
-	return
-
+	return url
 }
 
 func readResponseBody(resp *http.Response) ([]byte, error) {

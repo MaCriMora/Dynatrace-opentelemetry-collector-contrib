@@ -7,9 +7,10 @@ import (
 type Config struct {
 	component.Config `mapstructure:",squash"`
 
-	APIEndpoint string `mapstructure:"API_ENDPOINT"`
-
-	APIToken string `mapstructure:"API_TOKEN"`
-
+	APIEndpoint     string   `mapstructure:"API_ENDPOINT"`
+	APIToken        string   `mapstructure:"API_TOKEN"`
 	MetricSelectors []string `mapstructure:"metric_selectors"`
+	Resolution      string   `mapstructure:"resolution"`
+	From            string   `mapstructure:"from"`
+	To              string   `mapstructure:"to"`
 }
