@@ -5,4 +5,4 @@ Get-Content .env | ForEach-Object {
 }
 
 # OpenTelemetry Collector starten
-.\bin\otelcontribcol_windows_amd64.exe --config=receiver/dynatracereceiver/config.yaml
+.\bin\otelcontribcol.exe --config=receiver/dynatracereceiver/config.yaml

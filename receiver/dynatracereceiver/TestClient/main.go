@@ -47,6 +47,21 @@ func main() {
 	from := viper.GetString("receivers.dynatrace.from")
 	to := viper.GetString("receivers.dynatrace.to")
 
+	pollInterval := viper.GetDuration("receivers.dynatrace.poll_interval")
+	if pollInterval <= 0 {
+		pollInterval = 30 * time.Second
+	}
+
+	httpTimeout := viper.GetDuration("receivers.dynatrace.http_timeout")
+	if httpTimeout <= 0 {
+		httpTimeout = 5 * time.Second
+	}
+
+	maxRetries := viper.GetInt("receivers.dynatrace.max_retries")
+	if maxRetries <= 0 {
+		maxRetries = 3
+	}
+
 	if len(metricSelectors) == 0 {
 		log.Fatal("No metric selectors found in config.yaml")
 	}
@@ -68,6 +83,9 @@ func main() {
 		Resolution:      resolution,
 		From:            from,
 		To:              to,
+		PollInterval:    pollInterval,
+		HTTPTimeout:     httpTimeout,
+		MaxRetries:      maxRetries,
 	}
 
 	receiver := &dynatracereceiver.Receiver{

@@ -21,6 +21,7 @@ type Receiver struct {
 	NextMetric consumer.Metrics
 	ticker     *time.Ticker
 	stopChan   chan struct{}
+	httpClient *http.Client
 }
 
 type DynatraceResponse struct {
@@ -46,14 +47,20 @@ type MetricValues struct {
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 	fmt.Println("Dynatrace Receiver started with config:", r.Config)
 
-	r.ticker = time.NewTicker(30 * time.Second) // Fetch data every 30 seconds
+	r.ticker = time.NewTicker(r.Config.PollInterval)
 	r.stopChan = make(chan struct{})
+
+	if r.httpClient == nil {
+		r.httpClient = &http.Client{
+			Timeout: r.Config.HTTPTimeout,
+		}
+	}
 
 	go func() {
 		for {
 			select {
 			case <-r.ticker.C:
-				metrics, err := pullDynatraceMetrics(r.Config)
+				metrics, err := r.pullDynatraceMetrics(ctx, r.Config)
 				if err != nil {
 					fmt.Println("Error pulling metrics:", err)
 				}
@@ -73,7 +80,6 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// Shutdown stops the periodic fetching loop.
 func (r *Receiver) Shutdown(ctx context.Context) error {
 	fmt.Println("Dynatrace Receiver shutting down.")
 	r.ticker.Stop()
@@ -81,23 +87,31 @@ func (r *Receiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func pullDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
+func (r *Receiver) pullDynatraceMetrics(ctx context.Context, cfg *Config) ([]DynatraceMetricData, error) {
 
-	metrics, err := fetchAllDynatraceMetrics(cfg)
-	if err != nil {
-		return nil, err
+	var metrics []DynatraceMetricData
+	var err error
+
+	for i := 0; i < cfg.MaxRetries; i++ {
+		metrics, err = r.fetchAllDynatraceMetrics(ctx, cfg)
+		if err == nil {
+			return metrics, nil
+		}
+		fmt.Printf("Attempt %d failed: %v\n", i+1, err)
+		time.Sleep(time.Second * time.Duration(i+1)) // simple backoff
 	}
 
-	//printOTelMetrics(metrics)
-
-	return metrics, nil
+	return nil, fmt.Errorf("all retries failed: %w", err)
 }
 
-func fetchAllDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
+func (r *Receiver) fetchAllDynatraceMetrics(ctx context.Context, cfg *Config) ([]DynatraceMetricData, error) {
 
 	url := createMetricsQuery(cfg)
 
-	resp, err := makeHttpRequest(url, cfg.APIToken)
+	ctx, cancel := context.WithTimeout(ctx, cfg.HTTPTimeout)
+	defer cancel()
+
+	resp, err := r.makeHttpRequest(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("request creation failed: %w", err)
 	}
@@ -116,6 +130,7 @@ func fetchAllDynatraceMetrics(cfg *Config) ([]DynatraceMetricData, error) {
 	var prettyJSON bytes.Buffer
 
 	err2 := json.Indent(&prettyJSON, body, "", "  ")
+
 	if err2 != nil {
 		//fmt.Println("Raw Response (invalid JSON):", string(body))
 	} else {
@@ -144,24 +159,28 @@ func readResponseBody(resp *http.Response) ([]byte, error) {
 	return body, nil
 }
 
-func makeHttpRequest(url, apiToken string) (*http.Response, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+func (r *Receiver) makeHttpRequest(ctx context.Context, url string) (*http.Response, error) {
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Api-Token "+apiToken)
+	req.Header.Set("Authorization", "Api-Token "+r.Config.APIToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := r.httpClient.Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		defer resp.Body.Close()
+		return nil, fmt.Errorf("dynatrace returned non-2xx status: %d", resp.StatusCode)
 	}
 
 	return resp, nil
 }
 
-// TODO
 func convertToMetricData(metrics []DynatraceMetricData) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
@@ -175,12 +194,11 @@ func convertToMetricData(metrics []DynatraceMetricData) pmetric.Metrics {
 			gauge := m.SetEmptyGauge()
 
 			for i, timestamp := range data.Timestamps {
-				if i < len(data.Values) && data.Values[i] != 0 {
+				if i < len(data.Values) {
 					dp := gauge.DataPoints().AppendEmpty()
 					dp.SetTimestamp(pcommon.Timestamp(timestamp * 1e6))
 					dp.SetDoubleValue(data.Values[i])
 
-					// container // umgebungen evt. later filtern
 					for key, val := range data.DimensionMap {
 						dp.Attributes().PutStr(key, val)
 					}
@@ -190,22 +208,4 @@ func convertToMetricData(metrics []DynatraceMetricData) pmetric.Metrics {
 	}
 
 	return md
-}
-
-// nur für schöneren print in der konsole zum testen
-func printOTelMetrics(metrics []DynatraceMetricData) {
-	fmt.Printf("\nConverted OpenTelemetry Metrics (%d metrics found):\n", len(metrics))
-
-	for _, metric := range metrics {
-		fmt.Printf("\nMetric Name: %s\n", metric.MetricID)
-		fmt.Println("---------------------------------")
-
-		for _, data := range metric.Data {
-			for i, ts := range data.Timestamps {
-				if i < len(data.Values) {
-					fmt.Printf("Timestamp: %d | Value: %.2f\n", ts, data.Values[i])
-				}
-			}
-		}
-	}
 }

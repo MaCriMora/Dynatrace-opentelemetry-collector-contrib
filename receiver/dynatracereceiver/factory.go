@@ -2,6 +2,7 @@ package dynatracereceiver
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -19,7 +20,17 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		APIEndpoint:     "https://YourEndpoint.live.dynatrace.com/api/v2/metrics/query", // Placeholder
+		APIToken:        "",
+		MetricSelectors: []string{},
+		Resolution:      "1h",
+		From:            "now-1h",
+		To:              "now",
+		PollInterval:    30 * time.Second,
+		MaxRetries:      3,
+		HTTPTimeout:     5 * time.Second,
+	}
 }
 
 func createMetricsReceiver(
