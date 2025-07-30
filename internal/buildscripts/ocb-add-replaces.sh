@@ -9,6 +9,13 @@ DIR="$1"
 CONFIG_IN="cmd/$DIR/builder-config.yaml"
 CONFIG_OUT="cmd/$DIR/builder-config-replaced.yaml"
 
+# If the output already contains "replaces:", skip rewriting it
+if grep -q "^replaces:" "$CONFIG_IN"; then
+  echo "🟡 'replaces:' already exists in $CONFIG_IN — skipping injection."
+  cp "$CONFIG_IN" "$CONFIG_OUT"
+  exit 0
+fi
+
 cp "$CONFIG_IN" "$CONFIG_OUT"
 
 local_mods=$(find . -type f -name "go.mod" -exec dirname {} \; | sort)

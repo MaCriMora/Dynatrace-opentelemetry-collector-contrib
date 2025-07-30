@@ -137,14 +137,13 @@ func (r *Receiver) fetchAllDynatraceMetrics(ctx context.Context, cfg *Config) ([
 		//fmt.Println("Raw Response (formatted JSON):", prettyJSON.String())
 	}
 
-	//fmt.Println("Raw Response (invalid JSON):", string(body))
-
 	return dtResponse.Result, nil
 }
 
 func createMetricsQuery(cfg *Config) string {
+	apiEndpoint := strings.TrimSpace(cfg.APIEndpoint)
 	metricSelector := strings.Join(cfg.MetricSelectors, ",")
-	url := fmt.Sprintf("%s?metricSelector=%s&resolution=%s&from=%s&to=%s", cfg.APIEndpoint, metricSelector, cfg.Resolution, cfg.From, cfg.To)
+	url := fmt.Sprintf("%s?metricSelector=%s&resolution=%s&from=%s&to=%s", apiEndpoint, metricSelector, cfg.Resolution, cfg.From, cfg.To)
 
 	fmt.Println("Fetching data from:", url)
 	return url
@@ -165,6 +164,7 @@ func (r *Receiver) makeHttpRequest(ctx context.Context, url string) (*http.Respo
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Authorization", "Api-Token "+r.Config.APIToken)
 	req.Header.Set("Content-Type", "application/json")
 

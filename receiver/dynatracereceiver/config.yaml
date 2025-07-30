@@ -12,31 +12,44 @@ receivers:
       - builtin:host.net.nic.trafficOut
       - builtin:host.net.nic.trafficIn 
       - builtin:kubernetes.node.conditions
-    resolution: 1h
-    from: "2025-04-01T00:00:00Z"
-    to: "2025-04-03T00:00:00Z"
+    resolution: 1m # 1m
+    from: "2025-04-01T00:00:00Z" # now-1m 
+    to: "2025-04-02T00:00:00Z" # now  
     poll_interval: 30s 
     max_retries: 3
-    http_timeout: 30s
+    http_timeout: 10s
 
 exporters:
+  # otlphttp:
+    # endpoint: http://localhost:4318  
   debug:
 
 processors:
   batch:
+    timeout: 5s             # flush every 5 seconds (adjust as needed)
+    send_batch_size: 500    # max number of data points per batch
   resource:
     attributes:
       - key: environment
-        value: ${env:DEPLOYMENT_ENVIRONMENT}
+        value: ${env:DEPLOYMENT_ENVIRONMENT}  # prod, stage, test, dev
+        action: upsert
+      - key: project_name
+        value: ${env:PROJECT_NAME}            # inject your project/cluster name dynamically
         action: upsert
       - key: team_owner
         value: "team-sid"
         action: insert
+      - key: region
+        value: ${env:DEPLOYMENT_REGION}       # optional region or location if applicable
+        action: upsert
 
 service:
+  telemetry:
+    logs:
+      level: debug
   pipelines:
     metrics:
       receivers: [dynatrace]
       processors: [resource, batch]
-      exporters: [debug]
+      exporters: [debug] # otlphttp
 

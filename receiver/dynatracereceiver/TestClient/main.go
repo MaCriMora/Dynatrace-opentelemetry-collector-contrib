@@ -68,6 +68,7 @@ func main() {
 	if resolution == "" {
 		resolution = "1h"
 	}
+
 	if from == "" {
 		from = "2025-04-01T00:00:00Z"
 	}
